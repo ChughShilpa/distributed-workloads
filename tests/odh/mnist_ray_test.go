@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"log"
 	"os/exec"
+	"strings"
 	"testing"
 	"time"
 
@@ -250,7 +251,13 @@ func readMnistScriptTemplate(test Test, filePath string) []byte {
 }
 
 func buildAndPushRayImage(test Test, namespace string, image string) {
-	cmd := exec.Command("resources/custom_image.sh", namespace, image, "-c", "echo stdout; echo 1>&2 stderr")
+	file := ReadFile(test, "resources/custom_image.sh")
+
+	// cmd := exec.Command("resources/custom_image.sh", namespace, image, "-c", "echo stdout; echo 1>&2 stderr")
+
+	cmd := exec.Command("sh", "-s", "-", namespace, image)
+
+	cmd.Stdin = strings.NewReader(string(file))
 
 	stdoutStderr, err := cmd.CombinedOutput()
 	if err != nil {
