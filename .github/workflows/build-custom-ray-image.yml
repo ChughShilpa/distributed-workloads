@@ -3,7 +3,7 @@ name: Build and Push
 on:
   push:
     branches:
-      - 'main'
+      - 'workflow'
     paths:
       - images/runtime/examples/ray-torch-cuda/Dockerfile
   workflow_dispatch:
