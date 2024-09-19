@@ -25,7 +25,7 @@ jobs:
 
     - name: Build image
       run: |
-        podman build -t ray-torch-cuda -f Dockerfile
+        podman build -t ray-torch-cuda -f images/runtime/examples/ray-torch-cuda/Dockerfile
       
     - name: Login to Quay.io
       id: podman-login-quay
