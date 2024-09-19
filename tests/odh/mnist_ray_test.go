@@ -259,14 +259,12 @@ func buildAndPushRayImage(test Test, namespace string, image string) {
 
 	stdoutStderr, err := cmd.CombinedOutput()
 	if err != nil {
-		fmt.Printf("print err .....")
-		fmt.Println(err)
+		fmt.Println("Error executing custom_image script :", err)
 		return
 		//log.Fatal("Error executing custom_image script :", err)
 	}
-	//test.Expect(err).NotTo(HaveOccurred())
-
 	fmt.Printf("Logs of build and custom ray image . . .\n %s", stdoutStderr)
+	test.Expect(err).NotTo(HaveOccurred())
 }
 
 func getCustomRayImage(test Test, namespace string, image string) string {
