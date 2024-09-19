@@ -6,11 +6,6 @@ on:
       - 'workflow'
     # paths:
     #   - images/runtime/examples/ray-torch-cuda/Dockerfile
-  workflow_dispatch:
-    inputs:
-      image:
-        description: 'Image name, i.e.: v0.0.1'
-        required: true
 
 jobs:
   build-and-push:
@@ -22,6 +17,9 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+
+    - name: check diskspace
+      run: df -h
 
     - name: Build image
       run: |
