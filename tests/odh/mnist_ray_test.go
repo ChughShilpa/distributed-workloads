@@ -260,6 +260,9 @@ func buildAndPushRayImage(test Test, namespace string, image string) {
 	stdoutStderr, err := cmd.CombinedOutput()
 	if err != nil {
 		fmt.Println("Error executing custom_image script :", err)
+		fmt.Println(string(stdoutStderr))
+		fmt.Printf("using combined command >>>>>>>>>>>>>>")
+		fmt.Println(fmt.Sprint(err) + ": " + string(stdoutStderr))
 		return
 		//log.Fatal("Error executing custom_image script :", err)
 	}
