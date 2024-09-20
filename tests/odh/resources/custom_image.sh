@@ -7,7 +7,9 @@ echo "switch to current project . . ."
 oc project $namespace
 
 echo "Build custom container image using podman . . ."
-cd ./../../images/runtime/examples
+#cd ./../../images/runtime/examples
+cd ./resources
+pwd
 cd $image
 podman build -t $image -f Dockerfile
 

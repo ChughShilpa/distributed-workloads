@@ -251,6 +251,7 @@ func readMnistScriptTemplate(test Test, filePath string) []byte {
 
 func buildAndPushRayImage(test Test, namespace string, image string) {
 	file := ReadFile(test, "resources/custom_image.sh")
+	Dockerfile := ReadFile(test, "resources/ray-torch-cuda/Dockerfile")
 
 	// cmd := exec.Command("resources/custom_image.sh", namespace, image, "-c", "echo stdout; echo 1>&2 stderr")
 
