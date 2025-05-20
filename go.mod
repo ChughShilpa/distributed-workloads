@@ -1,5 +1,7 @@
 module github.com/opendatahub-io/distributed-workloads
 
+// Testing workflow ...
+
 go 1.22.2
 
 require (
