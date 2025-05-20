@@ -1,0 +1,46 @@
+# This workflow build and push test images to https://quay.io/repository/opendatahub/distributed-workloads-tests
+
+# Create GitHub action which will run test image build (implemented in https://issues.redhat.com/browse/RHOAIENG-18525)
+# and push built image into https://quay.io/repository/opendatahub/distributed-workloads-tests
+
+# This action will be triggered for any code change in tests folder or in go.mod or go.sum. It should be possible 
+# to trigger the action also manually.
+
+# From opendatahub-io/distributed-workloads it will push image tag "latest". From red-hat-data-services/distributed-workloads 
+# it will push image tag corresponding to the release which the branch targets (i.e. "2.17").
+
+name: Build and Push test images corresponding to the release
+on:
+  push:
+      branches:
+        - 'rhoai-*'
+      paths:
+        - 'go.mod'
+        - 'go.sum'
+        - 'tests/**'
+  workflow_dispatch:
+    inputs:
+      image-tag:
+        description: 'Image tag corresponding to the release which the release branch targets (i.e. "2.17")'
+        required: true
+
+jobs:
+  build-and-push-test-images-release:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Login to Quay.io
+      id: podman-login-quay
+      run: podman login --username ${{ secrets.QUAY_ID }} --password ${{ secrets.QUAY_TOKEN }} quay.io
+
+    - name: Build test image
+      run: make build E2E_TEST_IMAGE_VERSION=${{ github.event.inputs.image-tag }}
+
+    - name: Push test image
+      run: make push-test-image
+
+    - name: Logout from Quay.io
+      if: always() && steps.podman-login-quay.outcome == 'success'
+      run:  podman logout quay.io
