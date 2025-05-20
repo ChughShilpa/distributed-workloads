@@ -1,6 +1,7 @@
 # Image tag for image containing e2e tests
 E2E_TEST_IMAGE_VERSION ?= latest
-E2E_TEST_IMAGE ?= quay.io/opendatahub/distributed-workloads-tests:${E2E_TEST_IMAGE_VERSION}
+#E2E_TEST_IMAGE ?= quay.io/opendatahub/distributed-workloads-tests:${E2E_TEST_IMAGE_VERSION}
+E2E_TEST_IMAGE ?= quay.io/shchugh/opendatahub/distributed-workloads-tests:${E2E_TEST_IMAGE_VERSION}
 
 .PHONY: setup-kueue
 setup-kueue: ## Set up Kueue for e2e tests.
@@ -41,3 +42,7 @@ verify-imports: openshift-goimports ## Run import verifications.
 .PHONY: build-test-image
 build-test-image:
 	podman build -f images/tests/Dockerfile -t ${E2E_TEST_IMAGE} .
+
+.PHONY: push-test-image
+push-test-image:
+	podman push ${E2E_TEST_IMAGE}
