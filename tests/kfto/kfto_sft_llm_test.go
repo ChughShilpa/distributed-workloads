@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -29,19 +30,28 @@ import (
 	. "github.com/onsi/gomega"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	. "github.com/opendatahub-io/distributed-workloads/tests/common"
 	. "github.com/opendatahub-io/distributed-workloads/tests/common/support"
 	"github.com/opendatahub-io/distributed-workloads/tests/odh"
+
+	"sigs.k8s.io/kueue/apis/kueue/v1beta1"
 )
 
-func TestKftoSftLlmLlama3_1_8BInstruct(t *testing.T) {
+func TestKftoSftLlmLlama3_1_8BInstructWithCudaPyTorch251(t *testing.T) {
 	Tags(t, KftoCuda)
-	kftoSftLlm(t, "meta-llama/Llama-3.1-8B-Instruct")
+	kftoSftLlm(t, GetTrainingCudaPyTorch251Image(), NVIDIA, "meta-llama/Llama-3.1-8B-Instruct")
+	//kftoSftLlm(t, GetTrainingCudaPyTorch241Image(), AMD, "meta-llama/Llama-3.1-8B-Instruct")
 }
 
-func kftoSftLlm(t *testing.T, modelName string) {
+func TestKftoSftLlmLlama3_1_8BInstructWithROCmPyTorch251(t *testing.T) {
+	Tags(t, KftoRocm)
+	kftoSftLlm(t, GetTrainingROCmPyTorch251Image(), AMD, "meta-llama/Llama-3.1-8B-Instruct")
+}
+
+func kftoSftLlm(t *testing.T, image string, gpu Accelerator, modelName string) {
 	test := With(t)
 
 	// Create a namespace
@@ -66,6 +76,42 @@ func kftoSftLlm(t *testing.T, modelName string) {
 	// Create PVC for Notebook
 	notebookPVC := CreatePersistentVolumeClaim(test, namespace.Name, "500Gi", AccessModes(corev1.ReadWriteMany), StorageClassName(storageClass.Name))
 
+	// Create Kueue resources
+	resourceFlavor := CreateKueueResourceFlavor(test, v1beta1.ResourceFlavorSpec{})
+	fmt.Sprintln(gpu.ResourceLabel)
+	defer test.Client().Kueue().KueueV1beta1().ResourceFlavors().Delete(test.Ctx(), resourceFlavor.Name, metav1.DeleteOptions{})
+	cqSpec := v1beta1.ClusterQueueSpec{
+		NamespaceSelector: &metav1.LabelSelector{},
+		ResourceGroups: []v1beta1.ResourceGroup{
+			{
+				CoveredResources: []corev1.ResourceName{corev1.ResourceName("cpu"), corev1.ResourceName("memory"), corev1.ResourceName(gpu.ResourceLabel)},
+				Flavors: []v1beta1.FlavorQuotas{
+					{
+						Name: v1beta1.ResourceFlavorReference(resourceFlavor.Name),
+						Resources: []v1beta1.ResourceQuota{
+							{
+								Name:         corev1.ResourceCPU,
+								NominalQuota: resource.MustParse("32"),
+							},
+							{
+								Name:         corev1.ResourceMemory,
+								NominalQuota: resource.MustParse("512Gi"),
+							},
+							{
+								Name:         corev1.ResourceName(gpu.ResourceLabel),
+								NominalQuota: resource.MustParse("8"),
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	clusterQueue := CreateKueueClusterQueue(test, cqSpec)
+	defer test.Client().Kueue().KueueV1beta1().ClusterQueues().Delete(test.Ctx(), clusterQueue.Name, metav1.DeleteOptions{})
+	localQueue := CreateKueueLocalQueue(test, namespace.Name, clusterQueue.Name, AsDefaultQueue)
+
 	// Read and update the notebook content
 	notebookContent := odh.ReadFileExt(test, workingDirectory+"/../../examples/kfto-sft-llm/sft.ipynb")
 	updatedNotebookContent := string(notebookContent)
@@ -73,21 +119,24 @@ func kftoSftLlm(t *testing.T, modelName string) {
 	// Update notebook parameters for testing
 	requiredChangesInNotebook := map[string]string{
 		"model_name_or_path: Meta-Llama/Meta-Llama-3.1-8B-Instruct": fmt.Sprintf("model_name_or_path: %s", modelName),
-		"num_train_epochs: 10":                               "num_train_epochs: 1",
-		"output_dir: /mnt/shared/Meta-Llama-3.1-8B-Instruct": fmt.Sprintf("output_dir: /mnt/shared/%s", modelName),
-		"api_server = \\\"<API_SERVER>\\\"":                  fmt.Sprintf("api_server = \\\"%s\\\"", GetOpenShiftApiUrl(test)),
-		"token = \\\"<TOKEN>\\\"":                            fmt.Sprintf("token = \\\"%s\\\"", userToken),
-		"#configuration.verify_ssl = False":                  "configuration.verify_ssl = False",
-		"name=\\\"sft\\\"":                                   fmt.Sprintf("name=\\\"sft-%s\\\"", namespace.Name),
-		"\"HF_TOKEN\\\": \\\"\\\"":                           fmt.Sprintf("\"HF_TOKEN\\\": \\\"%s\\\"", hfToken),
-		"claim_name=\\\"shared\\\"":                          fmt.Sprintf("claim_name=\\\"%s\\\"", notebookPVC.Name),
-		"eval_strategy: epoch":                               "eval_strategy: 'no'",
-		"logging_steps: 1":                                   "logging_steps: 10",
-		"\"client.get_job_logs(\\n\",":                       "\"client.wait_for_job_conditions(\\n\",",
-		"\"    follow=True,\\n\",":                           "\"    wait_timeout=1800,\\n\",\n\t\"    polling_interval=60,\\n\",",
-		"os.environ[\\\"TENSORBOARD_PROXY_URL\\\"]":          "#os.environ[\\\"TENSORBOARD_PROXY_URL\\\"]",
-		"%load_ext tensorboard":                              "#%load_ext tensorboard",
-		"%tensorboard --logdir /opt/app-root/src/shared":     "#%tensorboard --logdir /opt/app-root/src/shared",
+		"num_train_epochs: 10":                                            "num_train_epochs: 0",
+		"output_dir: /mnt/shared/Meta-Llama-3.1-8B-Instruct":              fmt.Sprintf("output_dir: /mnt/shared/%s", modelName),
+		"api_server = \\\"<API_SERVER>\\\"":                               fmt.Sprintf("api_server = \\\"%s\\\"", GetOpenShiftApiUrl(test)),
+		"token = \\\"<TOKEN>\\\"":                                         fmt.Sprintf("token = \\\"%s\\\"", userToken),
+		"#configuration.verify_ssl = False":                               "configuration.verify_ssl = False",
+		"name=\\\"sft\\\"":                                                fmt.Sprintf("name=\\\"sft-%s\\\"", namespace.Name),
+		"train_func=main,":                                                fmt.Sprintf("labels= {\\n\",\n\t\"            \\\"kueue.x-k8s.io/queue-name\\\": \\\"%s\\\"\\n\",\n\t\"    },\\n\",\n\t\"    train_func=main,", localQueue.Name),
+		"        \\\"nvidia.com/gpu\\\"":                                  fmt.Sprintf("        \\\"%s\\\"", gpu.ResourceLabel),
+		"base_image=\\\"quay.io/modh/training:py311-cuda124-torch251\\\"": fmt.Sprintf("base_image=\\\"%s\\\"", image),
+		"\"HF_TOKEN\\\": \\\"\\\"":                                        fmt.Sprintf("\"HF_TOKEN\\\": \\\"%s\\\"", hfToken),
+		"claim_name=\\\"shared\\\"":                                       fmt.Sprintf("claim_name=\\\"%s\\\"", notebookPVC.Name),
+		"eval_strategy: epoch":                                            "eval_strategy: 'no'",
+		"logging_steps: 1":                                                "logging_steps: 10",
+		"\"client.get_job_logs(\\n\",":                                    "\"client.wait_for_job_conditions(\\n\",",
+		"\"    follow=True,\\n\",":                                        "\"    wait_timeout=1800,\\n\",\n\t\"    polling_interval=60,\\n\",",
+		"os.environ[\\\"TENSORBOARD_PROXY_URL\\\"]":                       "#os.environ[\\\"TENSORBOARD_PROXY_URL\\\"]",
+		"%load_ext tensorboard":                                           "#%load_ext tensorboard",
+		"%tensorboard --logdir /opt/app-root/src/shared":                  "#%tensorboard --logdir /opt/app-root/src/shared",
 		"pretrained_path = \\\"/opt/app-root/src/shared/.cache/hub/models--Meta-Llama--Meta-Llama-3.1-8B-Instruct/snapshots/0e9e39f249a16976918f6564b8830bc894c89659/\\\"": "pretrained_path = \\\"/opt/app-root/src/.cache/hub/models--meta-llama--Llama-3.1-8B-Instruct/snapshots/0e9e39f249a16976918f6564b8830bc894c89659/\\\"",
 		"# Test the pre-trained model": "# Test the pre-trained model\\n\",\n\"from IPython.display import Markdown, display\\n\",\n\"import os",
 		"display(Markdown(output1))":   "display(Markdown(output1))\\n\",\n\"\\n\",\n\"# Save to file\\n\",\n\"output_path = \\\"/opt/app-root/src/pretrained_output.md\\\"\\n\",\n\"os.makedirs(os.path.dirname(output_path), exist_ok=True)\\n\",\n\"with open(output_path, \\\"w\\\") as f:\\n\",\n\t\"    f.write(output1)",
@@ -107,6 +156,19 @@ func kftoSftLlm(t *testing.T, modelName string) {
 	}
 
 	updatedNotebook := []byte(updatedNotebookContent)
+
+	// Save the modified notebook for debugging
+	debugDir := filepath.Join(workingDirectory, "debug")
+	if err := os.MkdirAll(debugDir, 0755); err != nil {
+		t.Logf("Failed to create debug directory: %v", err)
+	} else {
+		debugFile := filepath.Join(debugDir, "modified_sft.ipynb")
+		if err := os.WriteFile(debugFile, updatedNotebook, 0644); err != nil {
+			t.Logf("Failed to write debug notebook: %v", err)
+		} else {
+			t.Logf("Modified notebook saved to: %s", debugFile)
+		}
+	}
 
 	// Create ConfigMap with the notebook
 	configMap := map[string][]byte{

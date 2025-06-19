@@ -33,7 +33,7 @@ func createTestNamespace(t Test, options ...Option[*corev1.Namespace]) *corev1.N
 			Kind:       "Namespace",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "test-ns-",
+			GenerateName: "test-kfto-",
 		},
 	}
 
