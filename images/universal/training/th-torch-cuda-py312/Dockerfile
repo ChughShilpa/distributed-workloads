@@ -102,7 +102,9 @@ RUN if [ "${DOWNSTREAM}" != "true" ]; then \
         rdma-core \
         protobuf \
         cuda-cudart-devel-13-0 \
-        cuda-nvcc-13-0 && \
+        cuda-nvcc-13-0 \
+        libnccl-2.30.7-1+cuda13.3 \
+        libnccl-devel-2.30.7-1+cuda13.3 && \
     dnf clean all && rm -rf /var/cache/dnf/*; \
 else \
     echo "DOWNSTREAM BUILD: Skipping system packages (provided by base image)"; \
@@ -117,7 +119,21 @@ ARG PYTHON_VERSION
 COPY --from=builder /opt/app-root/lib/python${PYTHON_VERSION}/site-packages /opt/app-root/lib/python${PYTHON_VERSION}/site-packages
 COPY --from=builder /opt/app-root/bin /opt/app-root/bin
 
-# Remove uv from final image (inherited from base image, not needed at runtime)
+################################################################################
+# Workarounds for vLLM 0.21 on UBI9
+################################################################################
+
+# opencv-python-headless and polyfile-weave both register cv2.typing stubs
+# that trigger import cv2 during pkgutil scanning in vLLM's multiprocessing.spawn
+# child processes, which fails with libavcodec.so.60 not found on UBI9
+# See: https://github.com/vllm-project/vllm/issues/40741
+RUN uv pip uninstall opencv-python-headless polyfile-weave 2>/dev/null || true
+
+# tilelang ships a libcudart_stub.so that shadows the real CUDA runtime
+# in vLLM subprocesses, causing CUDA initialization failures
+RUN rm -f /opt/app-root/lib/python${PYTHON_VERSION}/site-packages/tilelang/lib/libcudart_stub.so
+
+# Remove uv from final image (not needed at runtime)
 RUN rm -f /opt/app-root/bin/uv
 
 # Copy license file

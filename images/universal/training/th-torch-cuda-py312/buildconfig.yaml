@@ -29,6 +29,8 @@ spec:
   source:
     type: Binary
     binary: {}
+  nodeSelector:
+    kubernetes.io/hostname: dev-cfsxt-gpu-workers-eugb3-2qtgm
   strategy:
     type: Docker
     dockerStrategy:
@@ -43,7 +45,6 @@ spec:
     requests:
       cpu: "4"
       memory: 8Gi
-      ephemeral-storage: 60Gi
     limits:
       cpu: "8"
       memory: 16Gi
