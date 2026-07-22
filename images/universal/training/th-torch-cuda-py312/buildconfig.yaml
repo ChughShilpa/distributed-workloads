@@ -1,0 +1,49 @@
+# OpenShift BuildConfig for th-torch-cuda-py312 universal training image
+# Builds natively on linux/amd64 cluster nodes (avoids slow QEMU on macOS).
+#
+# Prerequisites:
+#   # Create a Quay push secret (one-time):
+#   oc create secret docker-registry quay-push-secret \
+#       --docker-server=quay.io \
+#       --docker-username=<username> \
+#       --docker-password=<token>
+#
+# Usage:
+#   cd images/universal/training/th-torch-cuda-py312
+#
+#   # Create the BuildConfig (one-time):
+#   oc apply -f buildconfig.yaml
+#
+#   # Trigger a build (uploads local directory as build context):
+#   oc start-build th-torch-cuda-py312 --from-dir=. --follow
+#
+#   # Change the output tag:
+#   oc patch bc/th-torch-cuda-py312 -p \
+#       '{"spec":{"output":{"to":{"name":"quay.io/shchugh/th-torch-cuda-py312:new-tag"}}}}'
+---
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: th-torch-cuda-py312
+spec:
+  source:
+    type: Binary
+    binary: {}
+  strategy:
+    type: Docker
+    dockerStrategy:
+      dockerfilePath: Dockerfile
+  output:
+    to:
+      kind: DockerImage
+      name: quay.io/shchugh/uinversalimage:3.5-ga
+    pushSecret:
+      name: quay-push-secret
+  resources:
+    requests:
+      cpu: "4"
+      memory: 8Gi
+      ephemeral-storage: 60Gi
+    limits:
+      cpu: "8"
+      memory: 16Gi
