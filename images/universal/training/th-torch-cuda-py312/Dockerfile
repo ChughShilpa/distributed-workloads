@@ -13,7 +13,7 @@
 ################################################################################
 # Build Arguments
 ################################################################################
-ARG BASE_IMAGE=quay.io/opendatahub/odh-workbench-jupyter-minimal-cuda-py312-ubi9:3.6_ea2-v1.49
+ARG BASE_IMAGE=quay.io/opendatahub/odh-workbench-jupyter-minimal-cuda-py312-ubi9:3.6-v1.50
 ARG PYTHON_VERSION=3.12
 ARG DOWNSTREAM=false
 ARG OPENMPI_VERSION=4.1.6
@@ -40,7 +40,7 @@ WORKDIR /opt/app-root/src
 RUN UV_LINK_MODE=copy uv pip install --no-cache-dir --no-deps \
     --index-strategy=unsafe-best-match \
     # For RHOAI 3.6GA "prod" suffix to be removed from index-url - https://redhat.atlassian.net/browse/AIPCC-32410
-    --index-url=https://console.redhat.com/api/pypi/public-rhai/rhoai/3.6-EA2/cuda13.0-ubi9-prod/simple/ \
+    --index-url=https://console.redhat.com/api/pypi/public-rhai/rhoai/3.6/cuda13.0-ubi9-test/simple/ \
     -r /tmp/deps/requirements.txt
 
 # Fix permissions for OpenShift
