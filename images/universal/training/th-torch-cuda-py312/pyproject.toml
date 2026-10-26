@@ -98,7 +98,7 @@ dependencies = [
     "openpipe-art==0.5.18",
     
     # Inference
-    "vllm==0.28.0+rhaiv.1",
+    "vllm==0.31.0+rhaiv.2",
 ]
 
 [tool.uv]

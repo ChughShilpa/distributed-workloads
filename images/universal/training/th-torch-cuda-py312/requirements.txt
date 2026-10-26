@@ -68,6 +68,7 @@ apache-tvm-ffi==0.1.9
     #   --override (workspace)
     #   flashinfer-python
     #   mamba-ssm
+    #   nvidia-cudnn-frontend
     #   quack-kernels
     #   tilelang
     #   vllm
@@ -158,12 +159,15 @@ cuda-bindings==13.0.3
     #   cuda-python
     #   humming-kernels
 cuda-core==1.1.1
-    # via nccl4py
+    # via
+    #   nccl-extensions
+    #   nccl4py
 cuda-pathfinder==1.6.1
     # via
     #   cuda-bindings
     #   cuda-core
     #   cuda-python
+    #   nccl-extensions
     #   nccl4py
 cuda-python==13.0.3
     # via
@@ -266,9 +270,7 @@ flash-attn==2.8.3.post1
     #   instructlab-training
     #   rhai-innovation-mini-trainer
     #   training-hub
-flashinfer-jit-cache==0.6.16.post3
-    # via vllm
-flashinfer-python==0.6.16.post3
+flashinfer-python==0.7.0.post1
     # via vllm
 flask==3.1.3
     # via
@@ -323,14 +325,10 @@ greenlet==3.5.5
     # via sqlalchemy
 grpcio==1.83.0
     # via
-    #   grpcio-reflection
     #   grpcio-status
     #   opentelemetry-exporter-otlp-proto-grpc
     #   pyspark-connect
     #   tensorboard
-    #   vllm
-grpcio-reflection==1.83.0
-    # via vllm
 grpcio-status==1.83.0
     # via pyspark-connect
 gunicorn==26.0.0
@@ -360,16 +358,15 @@ httpx==0.28.1
     #   gql
     #   huggingface-hub
     #   litellm
-    #   mcp
     #   model-hosting-container-standards
     #   openai
-httpx-sse==0.4.3
-    # via mcp
 httpx2==2.12.0
-    # via anthropic
+    # via
+    #   anthropic
+    #   mcp
 huey==3.3.4
     # via mlflow
-huggingface-hub==1.28.0
+huggingface-hub==1.33.0
     # via
     #   accelerate
     #   datasets
@@ -381,7 +378,7 @@ huggingface-hub==1.28.0
     #   unsloth
     #   unsloth-zoo
     #   vllm
-humming-kernels==0.1.12
+humming-kernels==0.1.16
     # via vllm
 id==1.6.1
     # via sigstore
@@ -401,6 +398,8 @@ importlib-metadata==8.9.0
     #   mlflow-skinny
 iniconfig==2.3.0
     # via pytest
+instanttensor==0.2.2
+    # via vllm
 instructlab-training==0.16.2
     # via
     #   th-torch-cuda-universal-image (pyproject.toml)
@@ -510,8 +509,10 @@ matplotlib==3.11.1
     # via
     #   mlflow
     #   training-hub
-mcp==1.28.1
+mcp==2.3.0
     # via vllm
+mcp-types==2.3.0
+    # via mcp
 mdurl==0.1.2
     # via markdown-it-py
 mistral-common==1.11.7
@@ -549,8 +550,12 @@ multiprocess==0.70.16
     #   training-hub
 narwhals==2.24.0
     # via scikit-learn
-nccl4py==0.5.0
+nccl-extensions==0.1.0
     # via flashinfer-python
+nccl4py==0.5.0
+    # via
+    #   flashinfer-python
+    #   nccl-extensions
 nest-asyncio==1.6.0
     # via
     #   openpipe-art
@@ -594,6 +599,7 @@ numpy==2.3.5
     #   mistral-common
     #   ml-dtypes
     #   mlflow
+    #   nccl-extensions
     #   nccl4py
     #   numba
     #   nvidia-cutlass-dsl-libs-base
@@ -623,30 +629,29 @@ nvidia-cuda-nvdisasm==13.3.73
     #   nvidia-cutlass-dsl-libs-core
     #   nvidia-cutlass-dsl-libs-cu12
     #   nvidia-cutlass-dsl-libs-cu13
-nvidia-cudnn-frontend==1.27.0
+nvidia-cudnn-frontend==1.31.0
     # via
     #   flashinfer-python
     #   vllm
-nvidia-cutlass-dsl==4.6.2
+nvidia-cutlass-dsl==4.7.1
     # via
     #   flashinfer-python
+    #   nvidia-cudnn-frontend
     #   quack-kernels
     #   vllm
-nvidia-cutlass-dsl-libs-base==4.6.2
+nvidia-cutlass-dsl-libs-base==4.7.1
     # via
     #   nvidia-cutlass-dsl
     #   nvidia-cutlass-dsl-libs-cu12
     #   nvidia-cutlass-dsl-libs-cu13
-nvidia-cutlass-dsl-libs-core==4.6.2
+nvidia-cutlass-dsl-libs-core==4.7.1
     # via nvidia-cutlass-dsl-libs-base
-nvidia-cutlass-dsl-libs-cu12==4.6.2
+nvidia-cutlass-dsl-libs-cu12==4.7.1
     # via nvidia-cutlass-dsl
-nvidia-cutlass-dsl-libs-cu13==4.6.2
+nvidia-cutlass-dsl-libs-cu13==4.7.1
     # via nvidia-cutlass-dsl
 nvidia-ml-py==13.610.43
-    # via
-    #   flashinfer-python
-    #   humming-kernels
+    # via flashinfer-python
 nvtx==0.2.15
     # via vllm
 oauthlib==3.3.1
@@ -659,8 +664,6 @@ openai==2.54.0
     #   litellm
     #   openpipe-art
     #   vllm
-openai-harmony==0.0.8
-    # via vllm
 opencv-python-headless==4.14.0.94
     # via
     #   mistral-common
@@ -671,6 +674,7 @@ openpipe-art==0.5.18
     #   training-hub
 opentelemetry-api==1.44.0
     # via
+    #   mcp
     #   mlflow-skinny
     #   mlflow-tracing
     #   opentelemetry-exporter-otlp-proto-grpc
@@ -713,6 +717,8 @@ opentelemetry-semantic-conventions==0.65b0
     #   opentelemetry-semantic-conventions-ai
 opentelemetry-semantic-conventions-ai==0.5.1
     # via vllm
+oss-harmony==0.0.11
+    # via vllm
 outlines-core==0.2.14
     # via vllm
 packaging==26.2
@@ -732,6 +738,7 @@ packaging==26.2
     #   matplotlib
     #   mlflow-skinny
     #   mlflow-tracing
+    #   nccl-extensions
     #   nccl4py
     #   peft
     #   pytest
@@ -795,7 +802,6 @@ protobuf==7.36.1
     #   th-torch-cuda-universal-image (pyproject.toml)
     #   databricks-sdk
     #   googleapis-common-protos
-    #   grpcio-reflection
     #   grpcio-status
     #   mlflow-skinny
     #   mlflow-tracing
@@ -858,13 +864,14 @@ pydantic==2.13.4
     #   litellm
     #   lm-format-enforcer
     #   mcp
+    #   mcp-types
     #   mistral-common
     #   mlflow-skinny
     #   mlflow-tracing
     #   model-hosting-container-standards
     #   model-registry
     #   openai
-    #   openai-harmony
+    #   oss-harmony
     #   pydantic-extra-types
     #   pydantic-settings
     #   sigstore
@@ -882,9 +889,7 @@ pydantic-extra-types==2.11.1
     #   fastapi
     #   mistral-common
 pydantic-settings==2.15.0
-    # via
-    #   fastapi
-    #   mcp
+    # via fastapi
 pygments==2.20.0
     # via
     #   pytest
@@ -950,7 +955,7 @@ pyyaml==6.0.3
     #   weave
 pyzmq==27.1.0
     # via vllm
-quack-kernels==0.6.4
+quack-kernels==0.6.5
     # via
     #   mamba-ssm
     #   vllm
@@ -1154,6 +1159,7 @@ torch==2.13.0
     #   flash-attn
     #   flashinfer-python
     #   humming-kernels
+    #   instanttensor
     #   instructlab-training
     #   liger-kernel
     #   mamba-ssm
@@ -1262,6 +1268,7 @@ typing-extensions==4.16.0
     #   httpx2
     #   huggingface-hub
     #   mcp
+    #   mcp-types
     #   mistral-common
     #   mlflow-skinny
     #   model-registry
@@ -1328,7 +1335,7 @@ uvicorn==0.52.4
     #   mlflow-skinny
 uvloop==0.22.1
     # via uvicorn
-vllm==0.28.0+rhaiv.1
+vllm==0.31.0+rhaiv.2
     # via th-torch-cuda-universal-image (pyproject.toml)
 watchfiles==1.2.0
     # via
@@ -1360,7 +1367,7 @@ xformers==0.0.35
     # via
     #   th-torch-cuda-universal-image (pyproject.toml)
     #   training-hub
-xgrammar==0.2.3
+xgrammar==0.2.7
     # via vllm
 xxhash==3.8.1
     # via
